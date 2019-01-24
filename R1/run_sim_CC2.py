@@ -4,6 +4,7 @@ import co2sys
 from scipy.integrate import ode
 from scipy.interpolate import interp1d
 
+# read in the driver inputs
 O2 = np.genfromtxt('DO.txt')
 pH= np.genfromtxt('pH.txt')
 
@@ -12,9 +13,8 @@ air = interp1d(air_p[:,0], air_p[:,1], kind='previous',fill_value=1,bounds_error
 
 I_p=np.genfromtxt('I.txt')
 I = interp1d(I_p[:,0], I_p[:,1], kind='linear',fill_value=0,bounds_error=False)
-y0=[200.]
 
-# set up the se qswarer 
+# set up the seawater 
 T=20.
 TK = T+273.15
 S=33.
@@ -33,7 +33,7 @@ TA = 2400
 
 K1 = co2sys.K1_H2CO3(TK,S,const=10)*1e6 ; RT1=6000
 K2 = co2sys.K2_H2CO3(TK,S,const=10)*1e6 ; RT2=12000
-KW = co2sys.K_W(TK,S)*1e12              ; RT3=900
+KW = co2sys.K_W(TK,S)*1e12              ;
 
 datain = np.array([[S,T,0,0,0,0,0,TA,DIC]])
 dataout=co2sys.CO2sys(datain,const=10)

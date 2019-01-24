@@ -21,7 +21,7 @@ S=33.
 O2H  = co2sys.K0_O2 (TK,S)*co2sys.rho_sw(TK,S)/1000 * 0.2094*1e6
 CO2H = co2sys.K0_CO2(TK,S)*co2sys.rho_sw(TK,S)/1000 * 500e-6*1e6
 
-P   = 600.*24*0.
+P   = 600.*24
 R   = 1. *24*0.
 kla = np.log(2.)/4.*60.*24.
 KM  = 200.

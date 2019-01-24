@@ -3,6 +3,7 @@ import numpy as np
 import co2sys 
 from scipy.integrate import ode
 from scipy.interpolate import interp1d
+import pandas as pd
 
 O2 = np.genfromtxt('DO.txt')
 pH= np.genfromtxt('pH.txt')
@@ -67,9 +68,9 @@ for i,t in enumerate(time[1:]):
     r.integrate(t)
     ys[:,i+1]=r.y
 
-#datain=np.tile( [S,T,0,0,0,0,0,2400,DIC],[len(ys[0]),1])
-#datain[:,8]=ys[1]
-#dataout=co2sys.CO2sys(datain,10)
+datain=np.tile( [S,T,0,0,0,0,0,2400,DIC],[len(ys[0]),1])
+datain[:,8]=ys[1]
+dataout=co2sys.CO2sys(datain,10)
 
 df = pd.read_csv('exact.csv',index_col='time')
 

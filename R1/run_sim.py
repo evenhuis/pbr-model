@@ -27,14 +27,14 @@ KM  = 200.
 
 print(P,kla)
 
-
+TA=2400
 DIC=500
-datain = np.array([[S,T,0,0,0,0,0,2400,DIC]])
+datain = np.array([[S,T,0,0,0,0,0,TA,DIC]])
 
 
 def dydt( t, y, *args ):
     O,DIC = y 
-    datain = datain = np.array([[S,T,0,0,0,0,0,2400,DIC]])
+    datain = datain = np.array([[S,T,0,0,0,0,0,TA,DIC]])
     dataout=co2sys.CO2sys(datain,const=10)
     CO2  = dataout['CO2'][0]
     HCO3 = dataout['HCO3'][0]
@@ -59,7 +59,7 @@ for i,t in enumerate(time[1:]):
     r.integrate(t)
     ys[:,i+1]=r.y
 
-datain=np.tile( [S,T,0,0,0,0,0,2400,DIC],[len(ys[0]),1])
+datain=np.tile( [S,T,0,0,0,0,0,TA,DIC],[len(ys[0]),1])
 datain[:,8]=ys[1]
 dataout=co2sys.CO2sys(datain,10)
 
