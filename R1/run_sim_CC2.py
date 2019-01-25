@@ -15,18 +15,24 @@ I_p=np.genfromtxt('I.txt')
 I = interp1d(I_p[:,0], I_p[:,1], kind='linear',fill_value=0,bounds_error=False)
 
 # set up the seawater 
-T=20.
+T=27.
 TK = T+273.15
 S=33.
+
+# calculate the equilibrium CO2 and O2 concentrations
 O2H  = co2sys.K0_O2 (TK,S)*co2sys.rho_sw(TK,S)/1000 * 0.2094*1e6
 CO2H = co2sys.K0_CO2(TK,S)*co2sys.rho_sw(TK,S)/1000 * 500e-6*1e6
+
+print("O2H = ", O2H)
+print("CO2H = ", CO2H)
 
 P   = 600.*24
 R   = 1. *24*0.
 kla = np.log(2.)/4.*60.*24.
 KM  = 200.
 
-print(P,kla)
+print("P = ", P)
+print("kLA = ", kla)
 
 DIC=500
 TA = 2400

@@ -4,6 +4,7 @@ import co2sys
 from scipy.integrate import ode
 from scipy.interpolate import interp1d
 
+# read in the driver inputs
 O2 = np.genfromtxt('DO.txt')
 pH= np.genfromtxt('pH.txt')
 
@@ -14,7 +15,7 @@ I_p=np.genfromtxt('I.txt')
 I = interp1d(I_p[:,0], I_p[:,1], kind='linear',fill_value=0,bounds_error=False)
 
 # set up the sea water 
-T=20.
+T=27.
 TK = T+273.15
 S=33.
 O2H  = co2sys.K0_O2 (TK,S)*co2sys.rho_sw(TK,S)/1000 * 0.2094*1e6
@@ -25,12 +26,30 @@ R   = 1. *24*0. *0
 kla = np.log(2.)/4.*60.*24
 KM  = 200.
 
-print(P,kla)
+print("P = ", P)
+print("kLA = ", kla)
 
-TA=2400
+TA=3000
 DIC=500
+RR=16/106
 datain = np.array([[S,T,0,0,0,0,0,TA,DIC]])
 
+
+#def dydt( t, y, *args ):
+#    O,DIC,TA = y 
+#    datain = datain = np.array([[S,T,0,0,0,0,0,TA,DIC]])
+#    dataout=co2sys.CO2sys(datain,const=10)
+#    CO2  = dataout['CO2'][0]
+#    HCO3 = dataout['HCO3'][0]
+#    MM = HCO3/(HCO3+KM)
+#
+#    Pt   =  MM*P*I(t)
+#    dO   =  Pt-R       +kla*air(t)*(O2H -  O)
+#    dDIC = -Pt+R       +kla*air(t)*(CO2H -CO2)
+#    dTA  = +2*RR*Pt
+#    return [dO,dDIC,dTA]
+#
+#y0 = [210.,DIC,TA]; t0,t1=0,10
 
 def dydt( t, y, *args ):
     O,DIC = y 
@@ -40,12 +59,13 @@ def dydt( t, y, *args ):
     HCO3 = dataout['HCO3'][0]
     MM = HCO3/(HCO3+KM)
 
-    dO   =  MM*P*I(t)-R       +kla*air(t)*(O2H -  O)
-    dDIC = -MM*P*I(t)+R       +kla*air(t)*(CO2H -CO2)
+    Pt   =  MM*P*I(t)
+    dO   =  Pt-R       +kla*air(t)*(O2H -  O)
+    dDIC = -Pt+R       +kla*air(t)*(CO2H -CO2)
+#    dTA  = +2*RR*Pt
     return [dO,dDIC]
 
 y0 = [210.,DIC]; t0,t1=0,10
-
 
 
 time = np.linspace(3,5.5,301)
@@ -61,17 +81,19 @@ for i,t in enumerate(time[1:]):
 
 datain=np.tile( [S,T,0,0,0,0,0,TA,DIC],[len(ys[0]),1])
 datain[:,8]=ys[1]
+#datain[:,7]=ys[2]
 dataout=co2sys.CO2sys(datain,10)
 
-fig,axs = plt.subplots(6,1,sharex=True)
+fig,axs = plt.subplots(7,1,sharex=True)
 
 
-axs[0].plot(time,ys[0])
-axs[1].plot(time,ys[1])
-axs[2].plot(time,dataout['CO2'])
-axs[3].plot(time,dataout['HCO3'])
-axs[4].plot(time,dataout['CO3'])
-axs[5].plot(time,dataout['pH'])
+ax=axs[0];ax.plot(time,ys[0]); ax.set_ylabel("O2")
+ax=axs[1];ax.plot(time,ys[1]); ax.set_ylabel("DIC")
+ax=axs[2];ax.plot(time,dataout['CO2']); ax.set_ylabel("CO2")
+ax=axs[3];ax.plot(time,dataout['HCO3']); ax.set_ylabel("HCO3")
+ax=axs[4];ax.plot(time,dataout['CO3']); ax.set_ylabel("CO3")
+ax=axs[5];ax.plot(time,dataout['pH']); ax.set_ylabel("pH")
+#ax=axs[6];ax.plot(time,ys[2]); ax.set_ylabel("TA")
 plt.show()
 
 import pandas as pd
