@@ -30,9 +30,9 @@ CO2H = co2sys.K0_CO2(TK,S)*co2sys.rho_sw(TK,S)/1000 * 500e-6*1e6
 print("O2H = ", O2H)
 print("CO2H = ", CO2H)
 
-P   = 600*24
-R   = P*0.1
-kla = np.log(2.)/4.*60.*24
+P   = 400*24
+R   = 40*24
+kla = 200
 KM  = 750
 
 print("P = ", P)
@@ -84,7 +84,7 @@ y0 = [210.,DIC,Alk]; t0,t1=0,10
 
 
 
-time = np.linspace(0.5,2.5,501)
+time = np.linspace(0.5,5.5,1001)
 ys = np.zeros([len(y0),len(time)])
 
 r = ode(dydt).set_integrator('dopri5')
