@@ -19,9 +19,9 @@ I_p[:,1] = I_p[:,1]/2000.
 I = interp1d(I_p[:,0], I_p[:,1], kind='linear',fill_value=0,bounds_error=False)
 
 # set up the sea water 
-T=15.
+T=25.
 TK = T+273.15
-S=15.
+S=25.
 
 # calculate the equilibrium CO2 and O2 concentrations
 O2H  = co2sys.K0_O2 (TK,S)*co2sys.rho_sw(TK,S)/1000 * 0.2094*1e6
@@ -286,76 +286,14 @@ if( True  ):
 
 
 ns=20
-fig,axs = plt.subplots(3,1)
+fig,axs = plt.subplots(3,1,sharex=True)
 for i,lab in enumerate(['O2','DIC','TA']):
     ax = axs[i]
-    ax.plot( time, ys_app[i], color='blue')
-    ax.plot( time, ys_itr[i], color='purple')
-    ax.plot( time[::ns], ys_ext[i,::ns],'.', color='green' )
-    #ax.set_ylabel(lab)
+    ax.plot( time, ys_app[i],                label='approx',color='blue')
+    ax.plot( time, ys_itr[i],                label='iter'  ,color='purple')
+    ax.plot( time[::ns], ys_ext[i,::ns],'.', label='exact' ,color='green' )
+    ax.set_ylabel(lab)
+    if( i==2) : 
+        ax.legend()
+
 plt.show()
-
-sdfjkl
-datain=np.tile( [S,T,0,0,0,0,0,Alk,DIC],[len(ys[0]),1])
-datain[:,8]=ys[1]
-datain[:,7]=ys[2]
-dataout=co2sys.CO2sys(datain,10)
-
-niter = 0
-iter_app = np.array([iterate_CO2sys( dic,alk, niter=niter) for dic,alk in zip(ys[1],ys[2])] ).T
-#df = pd.read_csv('exact.csv', index_col='time')
-
-ns = 20
-fig,axs = plt.subplots(7,1,sharex=True,figsize=(5,10))
-
-axs[0].set_xlim(min(time),max(time))
-#axs[0].plot(O2[:,0],O2[:,1],color='red')
-axs[0].plot(time,ys[0],color='blue')
-axs[0].set_ylabel('O2')
-
-#axs[1].plot(time,df['DIC'])
-#axs[1].plot(DIC_Alk[:,0],DIC_Alk[:,1],'.',color='red')
-axs[1].plot(time,ys[1],color='blue')
-axs[1].set_ylabel('DIC')
-
-Alk = ys[2]
-#axs[2].plot(DIC_Alk[:,0],DIC_Alk[:,2],'.',color='red')
-axs[2].plot(time,Alk,color='blue')
-axs[2].set_ylabel('Alk')
-
-#axs[2].plot(time,df['CO2'])
-axs[3].plot(time,CO2_approx( ys[1],Alk, S, T),color='blue')
-axs[3].plot(time, iter_app[1], color='purple')
-axs[3].plot(time[::ns],dataout['CO2'][::ns],'.',color='green')
-axs[3].set_ylabel('CO2')
-axs[3].set_ylim(0,50)
-
-#axs[3].plot(time,df['HCO3'])
-axs[4].plot(time,HCO3_approx( ys[1],Alk, S, T),color='blue')
-axs[4].plot(time, iter_app[2], color='purple')
-axs[4].plot(time[::ns],dataout['HCO3'][::ns],'.',color='green')
-axs[4].set_ylabel('HCO3')
-axs[4].set_ylim(0,4000)
-
-
-#axs[4].plot(time,df['CO3'])
-axs[5].plot(time,ys[1]-HCO3_approx( ys[1],ys[2], S, T)-CO2_approx( ys[1],ys[2], S, T),color='blue')
-axs[5].plot(time, iter_app[3], color='purple')
-axs[5].plot(time[::ns],dataout['CO3'][::ns],'.',color='green')
-axs[5].set_ylim(0,2000)
-
-#axs[5].plot(time,df['pH'])
-#axs[6].plot(pH[:,0],pH[:,1],color='red', label='obs')
-axs[6].plot(time, iter_app[0], color='purple', label='iter={}'.format(niter) )
-axs[6].plot(time,pH_approx( ys[1],ys[2]),color='blue', label='approx')
-axs[6].plot(time[::ns],dataout['pH'][::ns],'.',color='green',label='exact')
-axs[6].legend()
-axs[6].set_ylabel('pH')
-
-#plt.legend(['not sure', 'approx','exact'], loc=2)
-#plt.legend(['exact-exact', 'approx-approx', 'approx-exact'], bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-plt.show()
-
-
-
-
