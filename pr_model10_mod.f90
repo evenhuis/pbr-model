@@ -294,7 +294,7 @@ if(size(NCdt)>0) NC = spline_hc( t, NCdt, NCdc )
 if( I < 0.1 ) NC= 0
 
 dy =  0.
-dy(1) =     (P+R)/PQ         +  dot_product( kLa       * spg, ( O2_H- O2) ) 
+dy(1) =     (P+R)/PQ         +  dot_product( kLa       * spg, ( O2_H- O2) )   
 dy(2) = -   (P+R) +  0*dTA   +  dot_product( kLa*0.893 * spg, (CO2_H-CO2) ) 
 dy(3) =  NC*(P+R) +2.0*dTA
 dy(4) =    +(P+R)       ! C fixed in Cell
