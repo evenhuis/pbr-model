@@ -28,12 +28,6 @@ def filter_trace( obs, thresh ):
     return obs[obs_out]
 
 
-t0,t1 = 0,1
-
-spline_control={}
-spline_var    ={}
-
-pr.py_setup_drivers("./driver.txt")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def strings2charray( strings,strlen=10 ):
@@ -120,7 +114,7 @@ def log_likely( theta,theta_typ,time,O2_obs, pH_obs, DA_obs ):
     yO2  = np.interp ( O2_obs[:,0],  ta, y[ 0] )
     yDIC = np.interp ( DA_obs[:,0],  ta, y[ 1] )
     yTA  = np.interp ( DA_obs[:,0],  ta, y[ 2] )
-    ypH  = np.interp ( pH_obs[:,0],  ta, y[ 5] )
+    ypH  = np.interp ( pH_obs[:,0],  ta, y[ 6] )
 
     ll =    np.sum(stats.norm.logpdf(  yO2 -O2_obs[:,1], scale=theta[-2]+1 )) \
            +np.sum(stats.norm.logpdf(  ypH -pH_obs[:,1], scale=theta[-1]+0.1 )) \
@@ -208,8 +202,8 @@ def write_initial_file(  theta, theta_typ ):
 def read_initial_entry( f, theta,th_typ ):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     global spline_control, t0,t1
-    variables  =['P','R','kla1','kla2','fccm','km1','km2','km3','fP1','fP3','dta','tauP','tauR','fler','PQd','PQn','NCd' ]
-    var_singles=['O20','DIC0','TA0', 'O2_slope','O2_off','pH_slope','pH_off','sg_NP','sg2_DA','sg2_O2','sg2_pH']
+    variables  ='P R kla1 kla2 fccm km1 km2 km3 fP1 fP3 dta tauP tauR fler PQd PQn NCd O2M DICM TAM'.split()
+    var_singles=['O20','DIC0','TA0','O2_slope','O2_off','pH_slope','pH_off','sg_NP','sg2_DA','sg2_O2','sg2_pH']
 
     line = f.readline()
     if( line=="" ):
@@ -279,6 +273,13 @@ def get_data_trans( fname ):
 if( __name__ == '__main__'):
     day=3
     treat = "day{}_nm".format(day)
+    t0,t1 = 0,1
+
+    spline_control={}
+    spline_var    ={}
+
+    pr.py_setup_drivers("./driver_DE_comp.txt")
+    treat = "input_DE_comp.txt"
     theta,theta_typ = read_initial( "input{}_nm.txt".format(day))
 
     name=os.getcwd().split("/")[-1] +"/ day {} ".format(day)
@@ -293,8 +294,8 @@ if( __name__ == '__main__'):
     pH_obs[:,1] = trans[2]*(pH_obs[:,1]-  7)+  7 + trans[3]
 
     # decimate the O2 and pH
-    O2_obs = filter_trace( O2_obs,2.5)
-    pH_obs = filter_trace( pH_obs,0.05)
+    #O2_obs = filter_trace( O2_obs,2.5)
+    #pH_obs = filter_trace( pH_obs,0.05)
 
 
     # read the valve_info
@@ -347,10 +348,10 @@ if( __name__ == '__main__'):
     plt.show()
 
     # save the model into a dataframe
-    col_names = "O2,DIC,TA,C_fixed,1,pH,CO2,HCO3,CO3,PM,P_CO2,P_HCO3,P_CO3,R".split(',')
+    col_names = "O2,DIC,TA,C_pbr,C_tot,1,pH,CO2,HCO3,CO3,PM,P_CO2,P_HCO3,P_CO3,R".split(',')
     df = pd.DataFrame( data=r_mod[:].T,index=t_mod, columns=col_names)
     df.index.name='Time'
-    df.to_csv("mod8_{}.csv".format(treat))
+    df.to_csv("mod10_{}.csv".format(treat))
 
 
 

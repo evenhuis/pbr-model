@@ -8,7 +8,7 @@ use ext_driver_mod
 use resize_mod
 
 implicit none
-integer,public  , parameter :: nstate = 5, naux=9  ! size of state vector + aux variables  
+integer,public  , parameter :: nstate = 6, naux=9  ! size of state vector + aux variables  
 double precision, parameter :: pi=3.141592654, eps=5d-9
 
 
@@ -28,7 +28,10 @@ double precision,allocatable,dimension(:) :: mut, muc,     &
                                              flert, flerc, &
                                              PQdt,  PQdc,  &  ! photosynthetic quotient day
                                              PQnt,  PQnc,  &  !                         night
-                                             NCdt,  NCdc      ! Nitrogen-Carbon ratio
+                                             NCdt,  NCdc, &   ! Nitrogen-Carbon ratio
+                                             O2Mt,  O2Mc , & 
+                                             DICMt, DICMc , &
+                                             TAMt,  TAMc 
 
 
 ! carbonate chemistry parameters
@@ -38,6 +41,7 @@ double precision :: S =33.,                     &  ! Salinity
                     KM=500.,                    &  ! Michealis-Menten term for inorg C uptake
                     xO2 (2) = (/0.2094,0.0000/),&  ! partial pressure of O2
                     xCO2(2) = (/400d-6,1.00d0/),&  ! partial pressure of CO2
+                    vol=500                    ,&
                     K1f, K2f 
 contains
 
@@ -107,15 +111,20 @@ mask = theta_typ=='R'    ; Rc    = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='P'    ; Pc    = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='kla1' ; kla1c = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='kla2' ; kla2c = theta( indices(mask,count(mask) ) )
-mask = theta_typ=='km1'  ; km1c = theta( indices(mask,count(mask) ) )
-mask = theta_typ=='km2'  ; km2c = theta( indices(mask,count(mask) ) )
-mask = theta_typ=='km3'  ; km3c = theta( indices(mask,count(mask) ) )
-mask = theta_typ=='ta'   ; tac  = theta( indices(mask,count(mask) ) )
+mask = theta_typ=='km1'  ; km1c  = theta( indices(mask,count(mask) ) )
+mask = theta_typ=='km2'  ; km2c  = theta( indices(mask,count(mask) ) )
+mask = theta_typ=='km3'  ; km3c  = theta( indices(mask,count(mask) ) )
+mask = theta_typ=='ta'   ; tac   = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='tauP' ; tauPc = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='tauR' ; tauRc = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='PQd'  ; PQdc  = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='PQn'  ; PQnc  = theta( indices(mask,count(mask) ) )
 mask = theta_typ=='NCd'  ; NCdc  = theta( indices(mask,count(mask) ) )
+
+mask = theta_typ=='O2M'  ; if(count(mask)>0) O2Mc  = theta( indices(mask,count(mask) ) )
+mask = theta_typ=='DICM' ; if(count(mask)>0) DICMc = theta( indices(mask,count(mask) ) )
+mask = theta_typ=='TAM'  ; if(count(mask)>0) TAMc  = theta( indices(mask,count(mask) ) )
+
 
 ! transform the units
 Pc = Pc*24.
@@ -258,7 +267,8 @@ double precision,intent(in) :: t,  y(:)
 double precision            ::    dy(size(y))
 
 double precision :: DIC,TA, X,O2, PR ,H, pH, HCO3, CO2, CO3,& ! PR=rate of photosynthesis or respiration
-                     I,spg(2), O2_H(2), CO2_H(2), kLa(2),  PM,P,P_HCO3,P_CO2,P_CO3,R,PQ, dTA, NC
+                     I,spg(2), O2_H(2), CO2_H(2), kLa(2),  PM,P,P_HCO3,P_CO2,P_CO3,R,PQ, dTA, NC, &
+                       dil, O2M=0, DICM=0, TAM=0, Cp
 
 double precision :: t_dawn, t_dusk , mu=0.d0
 
@@ -268,9 +278,11 @@ t_dusk = t-floor((t)/24.)*24-20.
 O2 = y(1)
 DIC= y(2)
 TA = y(3)
+Cp = y(4)
 
 I       = ext_light(t)              ! irradiance at top of column (uEin)
 spg     = ext_gas  (t)              ! sparging rate
+dil     = ext_dil  (t)              ! dilution rate
 
 
 ! calculate the Henry's law level of dissolved gases for the input streams
@@ -282,6 +294,11 @@ CO2_H = xCO2 * K0_CO2( TK, S ) * rho_sw( TK, S ) * 1000.
 kLa = 0.d0
 kLa(1) = spline_hc( t, kla1t,kla1c )
 kLa(1) = lint_1D  ( t, kla1t,kla1c ,3 )
+if( dil > 0.01 )then
+   O2M    = lint_1D  ( t, O2Mt, O2Mc  ,3 )
+   DICM   = lint_1D  ( t, DICMt,DICMc ,3 )
+   TAM    = lint_1D  ( t, TAMt, TAMc  ,3 )
+endif
 if( size(kla2t)>0) kLa(2) = lint_1D( t, kla2t,kla2c,3 )
 
 ! calculate the growth, P and R rates
@@ -294,10 +311,11 @@ if(size(NCdt)>0) NC = spline_hc( t, NCdt, NCdc )
 if( I < 0.1 ) NC= 0
 
 dy =  0.
-dy(1) =     (P+R)/PQ         +  dot_product( kLa       * spg, ( O2_H- O2) )   
-dy(2) = -   (P+R) +  0*dTA   +  dot_product( kLa*0.893 * spg, (CO2_H-CO2) ) 
-dy(3) =  NC*(P+R) +2.0*dTA
-dy(4) =    +(P+R)       ! C fixed in Cell
+dy(1) =     (P+R)/PQ         +  dot_product( kLa       * spg, ( O2_H- O2) ) + dil/vol*( O2M- O2 )
+dy(2) = -   (P+R) +  0*dTA   +  dot_product( kLa*0.893 * spg, (CO2_H-CO2) ) + dil/vol*( DICM-DIC)
+dy(3) =  NC*(P+R) +2.0*dTA                                                  + dil/vol*( TAM-TA  )
+dy(4) =    +(P+R)                                                           + dil/vol*(    -Cp  )                   ! Carbon in cell in PBR 
+dy(5) =    +(P+R)     ! Total carbon fixed
 return
 end function dy_PR
 
@@ -382,6 +400,10 @@ call set_size( tauRt, 0 ) ; call set_size( tauRc, 0 )
 call set_size( flert, 0 ) ; call set_size( flerc, 0 )
 call set_size( PQdt , 0 ) ; call set_size( PQdc , 0 )
 call set_size( PQnt , 0 ) ; call set_size( PQnc , 0 )
+call set_size( O2Mt , 1 ) ; call set_size( O2Mc , 1 ) ; O2Mc  = O2M0
+call set_size( DICMt, 1 ) ; call set_size( DICMc, 1 ) ; DICMc = DICM0
+call set_size( TAMt , 1 ) ; call set_size( TAMc , 1 ) ; TAMc  = TAM0
+
 
 return
 end subroutine initialise
@@ -413,6 +435,9 @@ case("fler") ; flert  = Cp
 case("PQd")  ; PQdt   = Cp   
 case("PQn")  ; PQnt   = Cp
 case("NCd")  ; NCdt   = Cp   
+case("O2M")  ; O2Mt   = Cp
+case("DICM") ; DICMt  = Cp
+case("TAM")  ; TAMt   = Cp   
 end select
 
 return

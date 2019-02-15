@@ -1,0 +1,9 @@
+light_file  "I_filt.txt"
+air_file    "air.txt"
+
+ temp_val     26
+   depth_val  20
+   sal_val    34
+   K1_f      1.23
+   K2_f      0.53
+
