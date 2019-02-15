@@ -4,6 +4,6 @@ air_file    "air.txt"
    temp_val   25
    depth_val  20
    sal_val    34
-   K1_f      1.23
-   K2_f      0.53
+   K1f_val    1.23
+   K2f_val    0.53
 

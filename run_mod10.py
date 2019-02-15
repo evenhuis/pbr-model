@@ -280,7 +280,7 @@ if( __name__ == '__main__'):
 
     pr.py_setup_drivers("./driver_DE_comp.txt")
     treat = "input_DE_comp.txt"
-    theta,theta_typ = read_initial( "input{}_nm.txt".format(day))
+    theta,theta_typ = read_initial( treat )
 
     name=os.getcwd().split("/")[-1] +"/ day {} ".format(day)
     name= "Day {} ".format(day)

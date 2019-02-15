@@ -143,14 +143,9 @@ y0(3) = TA
 !y0(4) = 0.d0
 y0(4) = 1.d0
 
-call CC_solve_DIC_Talk( DIC_0*1d-6, TA*1.d-6, TK, S, CO2, H,  pH=pH, HCO3=HCO3,CO3=CO3, &
-                const=10 )
-CO2 =   CO2*1d6
-HCO3 = HCO3*1d6
-CO3 =   CO3*1d6
+t0 = time_steps(1)
 y =0.d0
 
-t0 = time_steps(1)
 call calc_XPR(t0,y0, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2,HCO3,CO3)
 y(        :nstate,1) = y0
 y(nstate+1:      ,1) =(/ pH,CO2,HCO3,CO3, PM,P_CO2,P_HCO3,P_CO3,R /)
@@ -209,6 +204,7 @@ K2f = ext_K2f( t )
 
 call CC_solve_DIC_Talk( DIC*1d-6, TA*1.d-6, TK, S, CO2, H,  pH=pH,HCO3=HCO3,CO3=CO3, &
                K1_f=K1f, K2_f=K2f, const=10 )
+
 CO2  =  CO2*1d6
 HCO3 = HCO3*1d6
 CO3  =  CO3*1d6
