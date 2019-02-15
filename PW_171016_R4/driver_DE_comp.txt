@@ -1,7 +1,7 @@
 light_file  "I_filt.txt"
 air_file    "air.txt"
 
- temp_val     26
+   temp_val   25
    depth_val  20
    sal_val    34
    K1_f      1.23

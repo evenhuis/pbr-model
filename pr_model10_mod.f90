@@ -40,7 +40,7 @@ double precision :: S =33.,                     &  ! Salinity
                     TA =2300.,                  &  ! alkinity in uM
                     KM=500.,                    &  ! Michealis-Menten term for inorg C uptake
                     xO2 (2) = (/0.2094,0.0000/),&  ! partial pressure of O2
-                    xCO2(2) = (/400d-6,1.00d0/),&  ! partial pressure of CO2
+                    xCO2(2) = (/397d-6,1.00d0/),&  ! partial pressure of CO2
                     vol=500                    ,&
                     K1f, K2f 
 contains
