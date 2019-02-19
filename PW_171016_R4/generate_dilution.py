@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 
 # reference time
-t0 = dt.datetime(2017,10,17,0,0,0)
+t0 = dt.datetime(2017,10,16,0,0,0)
 
 # read in the times and volumes of dilutions
 dil    =  pd.read_table("dilution_data.txt"  ,  sep="\s+")

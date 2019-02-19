@@ -27,9 +27,9 @@ implicit none
 double precision,dimension(5) ::  co2_stoich=(/  1.,   0.,   2.0 , 0.  , 0.   /),  &  ! DIC source
                                     n_stoich=(/  0.,   0.,   3.0 , 1.  , 0.   /),  &  ! N   source
                                     p_stoich=(/  0.,   0.,   4.0 , 0.  , 1.   /),  &  ! P   source 
-                                 prot_stoich=(/  6.,  12.,   1.5 , 0.7 , 0.020/),  &  ! 50, 10, 10,10 ,3 by weight
-                                 carb_stoich=(/  6.,  12.,   6.  , 0.  , 0.   /),  &  ! glucose type molecule
-                                 lipd_stoich=(/ 36.,  80.,   6.  , 0.  , 0.   /),  &  ! trigly with chain length 12
+                                 prot_stoich=(/  1., 1.58,  0.28 , 0.26, 0.000/),  &  ! 50, 10, 10,10 ,3 by weight
+                                 carb_stoich=(/  1., 2.  ,   1.  , 0.  , 0.   /),  &  ! glucose type molecule
+                                 lipd_stoich=(/  1., 2.47,  0.16 , 0.  , 0.   /),  &  ! trigly with chain length 12 (/36.,  80.,   6.  , 0.  , 0.   /)
                                  atomic_mass=(/ 12.,   1.,  16.  , 14. , 31.  /)
 
 
@@ -283,6 +283,7 @@ integer         :: ius           ! underscore location
 logical         :: lex
 integer :: i
 
+call balance_reaction(.true.)
 call init_arrays()
 
 open ( unit=1, file=filename )

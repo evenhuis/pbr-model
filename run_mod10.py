@@ -272,14 +272,16 @@ def get_data_trans( fname ):
 
 if( __name__ == '__main__'):
     day=3
-    treat = "day{}_nm".format(day)
+    treat = "input{}_nm.txt".format(day)
+    pr.py_setup_drivers("./driver.txt")
     t0,t1 = 0,1
 
     spline_control={}
     spline_var    ={}
 
-    pr.py_setup_drivers("./driver_DE_comp.txt")
-    treat = "input_DE_comp.txt"
+    #pr.py_setup_drivers("./driver_DE_comp.txt")
+    #treat = "input_DE_comp.txt"
+
     theta,theta_typ = read_initial( treat )
 
     name=os.getcwd().split("/")[-1] +"/ day {} ".format(day)
