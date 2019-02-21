@@ -229,7 +229,8 @@ PQ = 1.d0
 P_HCO3 = 0.d0
 P_CO2  = 0.d0
 P_CO3  = 0.d0
-if ( I>0.1) then
+PM     = 0.d0
+if ( I>0.2) then
    KM1=0.
    KM2=0.
    KM3=0.
@@ -286,6 +287,7 @@ S  = ext_sal( t )
 TK = ext_temp(t)+273.15d0
 O2_H  = xO2  * K0_O2 ( TK, S ) * rho_sw( TK, S ) * 1000.
 CO2_H = xCO2 * K0_CO2( TK, S ) * rho_sw( TK, S ) * 1000.
+
 
 kLa = 0.d0
 kLa(1) = spline_hc( t, kla1t,kla1c )

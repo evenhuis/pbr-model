@@ -33,10 +33,15 @@ double precision,intent(in) :: x(nx), xa(nxa), ya(nya)
 double precision            :: spln(nx)
 
 integer :: i
-do i = 1, size(x)
-   !spln(i) = lint_1D( x(i), xa, ya, typ )
-   spln(i) =  spline_hc( x(i), xa, ya )
-enddo
+if( typ==4 )then
+   do i = 1, size(x)
+      spln(i) =  spline_hc( x(i), xa, ya )
+   enddo
+else
+   do i = 1, size(x)
+      spln(i) = lint_1D( x(i), xa, ya, typ )
+   enddo
+endif
 return
 end function py_spline
 

@@ -8,12 +8,21 @@ sys.path.append('../')
 import os
 
 from   pr_model10 import py_interface_mod as pr
-import priors
+import priors10 as priors
 import scipy.optimize as op
 
 import plot_model_results10 as pmr
 
 from emcee_tools import helper_emcee as he
+
+variables  ='P R kla1 kla2 fccm km1 km2 km3 fP1 fP3 dta tauP tauR fler PQd PQn NCd O2M DICM TAM'.split()
+var_singles='O20 DIC0 TA0 O2_slope O2_off pH_slope pH_off sg_NP sg2_DA sg2_O2 sg2_pH'.split()
+spline_control={}
+spline_var    ={}
+t0 = 0
+t1 = 1
+
+col_names = "O2,DIC,TA,C_pbr,C_tot,1,pH,CO2,HCO3,CO3,PM,P_CO2,P_HCO3,P_CO3,R".split(',')
 
 def filter_trace( obs, thresh ):
     nobs = np.shape(obs)[0]
@@ -77,10 +86,6 @@ def run_sim( theta, theta_typ, time  ):
     #np.savetxt("timesteps.txt",np.column_stack((ta[tmask],tc[tmask])))
 
     yo = pr.sim_de( theta, strings2charray(theta_typ),  ta[tmask]   )
-    O2_off = 0 ; O2_slope=1
-    if( 'O2_off'   in theta_typ ): O2_off   = theta[theta_typ.index('O2_off')]
-    if( 'O2_slope' in theta_typ ): O2_slope = theta[theta_typ.index('O2_slope')]
-    yo[0] = 1./O2_slope*(yo[0]-210-O2_off)+210 
 
 
     #return ta[np.logical_and(tmask,mask)],yo[:,mask[tmask]]
@@ -111,15 +116,26 @@ def sim_on_obs( func, theta, x, x_o ):
 def log_likely( theta,theta_typ,time,O2_obs, pH_obs, DA_obs ):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ta,y = run_sim( theta, theta_typ, time )
+
+
+    O2_off = 0 ; O2_slope=1
+    if( 'O2_off'   in theta_typ ): O2_off   = theta[theta_typ.index('O2_off')]
+    if( 'O2_slope' in theta_typ ): O2_slope = theta[theta_typ.index('O2_slope')]
+
+    # apply the correction to the model
+    y[0] = 1./O2_slope*(y[0]-210-O2_off)+210 
+
     yO2  = np.interp ( O2_obs[:,0],  ta, y[ 0] )
     yDIC = np.interp ( DA_obs[:,0],  ta, y[ 1] )
     yTA  = np.interp ( DA_obs[:,0],  ta, y[ 2] )
     ypH  = np.interp ( pH_obs[:,0],  ta, y[ 6] )
 
-    ll =    np.sum(stats.norm.logpdf(  yO2 -O2_obs[:,1], scale=theta[-2]+1 )) \
-           +np.sum(stats.norm.logpdf(  ypH -pH_obs[:,1], scale=theta[-1]+0.1 )) \
-       +1e+1*np.sum(stats.norm.logpdf( yDIC-DA_obs[:,1], scale=theta[-3]+10.0 )) \
-       +1e+1*np.sum(stats.norm.logpdf( yTA -DA_obs[:,2], scale=theta[-3]+10.0 )) 
+    llO2  = np.sum(stats.norm.logpdf(  yO2 -O2_obs[:,1], scale=theta[theta_typ.index('sg2_O2')] ))
+    llpH  = np.sum(stats.norm.logpdf(  ypH -pH_obs[:,1], scale=theta[theta_typ.index('sg2_pH')] ))
+    llDIC = np.sum(stats.norm.logpdf( yDIC -DA_obs[:,1], scale=theta[theta_typ.index('sg2_DA')] ))
+    llTA  = np.sum(stats.norm.logpdf( yTA  -DA_obs[:,2], scale=theta[theta_typ.index('sg2_DA')] ))
+
+    ll =   llO2+llpH+llDIC+llTA
     return ll
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -133,25 +149,18 @@ def sg2_init( theta, theta_typ, time, O2_obs, pH_obs ):
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def log_prior( theta ):
+def log_prior( theta, theta_typ ):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    global theta_typ, spline_control
-    lp = 0
+    lp = 0.
     for v,typ in zip(theta,theta_typ):
-        #print(v,typ, prior_list( v,typ))
         lp += priors.prior_list( v,typ)
-   
-    Pcont = spline_control['P']
-    Pval = theta[ np.array(theta_typ)=='P']
-    for i in range(1,len(Pval)):
-        lp += stats.expon.logpdf(Pval[i]-Pval[i-1],scale=10/(Pcont[i]-Pcont[i-1])) 
     return lp
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def log_prob( theta, *args ):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    lprior = log_prior(theta)
+    lprior = log_prior(theta, theta_typ)
     if( np.isfinite(lprior) ):
         llike = log_likely( theta, *args )
         if( np.isfinite(llike) ):
@@ -201,9 +210,7 @@ def write_initial_file(  theta, theta_typ ):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def read_initial_entry( f, theta,th_typ ):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    global spline_control, t0,t1
-    variables  ='P R kla1 kla2 fccm km1 km2 km3 fP1 fP3 dta tauP tauR fler PQd PQn NCd O2M DICM TAM'.split()
-    var_singles=['O20','DIC0','TA0','O2_slope','O2_off','pH_slope','pH_off','sg_NP','sg2_DA','sg2_O2','sg2_pH']
+    global spline_control, t0,t1, variables, var_singles
 
     line = f.readline()
     if( line=="" ):
@@ -272,12 +279,9 @@ def get_data_trans( fname ):
 
 if( __name__ == '__main__'):
     day=3
-    treat = "input{}_nm.txt".format(day)
+    treat = "input_S50.txt"
     pr.py_setup_drivers("./driver.txt")
     t0,t1 = 0,1
-
-    spline_control={}
-    spline_var    ={}
 
     #pr.py_setup_drivers("./driver_DE_comp.txt")
     #treat = "input_DE_comp.txt"
@@ -295,9 +299,14 @@ if( __name__ == '__main__'):
     O2_obs[:,1] = trans[0]*(O2_obs[:,1]-210)+210 + trans[1]
     pH_obs[:,1] = trans[2]*(pH_obs[:,1]-  7)+  7 + trans[3]
 
+
+
     # decimate the O2 and pH
-    #O2_obs = filter_trace( O2_obs,2.5)
-    #pH_obs = filter_trace( pH_obs,0.05)
+    O2_obs = filter_trace( O2_obs,0.5)
+    pH_obs = filter_trace( pH_obs,0.02)
+    #O2_obs = O2_obs[::25]
+    #pH_obs = pH_obs[::25]
+
 
 
     # read the valve_info
@@ -350,7 +359,6 @@ if( __name__ == '__main__'):
     plt.show()
 
     # save the model into a dataframe
-    col_names = "O2,DIC,TA,C_pbr,C_tot,1,pH,CO2,HCO3,CO3,PM,P_CO2,P_HCO3,P_CO3,R".split(',')
     df = pd.DataFrame( data=r_mod[:].T,index=t_mod, columns=col_names)
     df.index.name='Time'
     df.to_csv("mod10_{}.csv".format(treat))
@@ -386,36 +394,36 @@ if( __name__ == '__main__'):
         plt.show()
 
         ch = input('continue to optimise? n')
-    max_LL = log_prob( theta, time,O2_l, pH_l, DA_l )
+    max_LL = log_prob( theta, theta_typ, time,O2_l, pH_l, DA_l )
 
 
     ch = input('sample chain? n')
     while( not(ch in ["n","N"]) ):
         ch = input("Restart from chain? Y")
         if( ch in ["y","Y"] ):
-            savefile="mod8_{}_chain.p".format(treat)
+            savefile="mod10_{}_chain.p".format(treat)
             if( os.path.isfile(savefile) ):
                 probs,chain = he.load_chain(savefile)
                 print("Chain loaded")
                 p0 = chain[:,-1,:]
                 samp = he.MCMC_restart( log_prob, p0, theta_typ, time, O2_l, pH_l, DA_l, nsteps=20, live_plot=True, max_LL=max_LL, threads=8 )
-                fname = "mod8_{}_chain.p".format(treat)
+                fname = "mod10_{}_chain.p".format(treat)
                 he.save_chain( fname, samp )
             else:
                 print("chain file not found")
         else:
-            samp = he.MCMC_all( log_prob, theta, theta_typ, time,  O2_l, pH_l, DA_l, nsteps=20, nwalker=400, live_plot=True, max_LL=max_LL, threads=8  )
-            fname = "mod8_{}_chain.p".format(treat)
+            samp = he.MCMC_all( log_prob, theta, theta_typ, time,  O2_l, pH_l, DA_l, nsteps=20, nwalker=1000, live_plot=True, max_LL=max_LL, threads=8  )
+            fname = "mod10_{}_chain.p".format(treat)
             he.save_chain( fname, samp )
         ch = input('continue to sample? n')
 
     ch = input('Load the chain? Y')
     if( ch in ["y","Y"] ):
-        fname = "mod8_{}_chain.p".format(treat)
+        fname = "mod10_{}_chain.p".format(treat)
         [prob,chain] = he.load_chain( fname )
 
-        sim_chain=pmr.pull_post( run_sim, theta_typ, time, chain, nsamp=50 )
-        pmr.plot_model_obs(  t_mod, r_mod, O2_d, pH_d, DA_d,sim_chain=sim_chain, name=name )
+        sim_time,sim_chain =pmr.pull_post( run_sim, theta_typ, time, chain, nsamp=50 )
+        pmr.plot_model_obs(  t_mod, r_mod, O2_o=O2_d, pH_o=pH_d, DA_o=DA_d,sim_chain=sim_chain, name=name )
         plt.savefig("plot_day{}.png".format(day))
         plt.savefig("plot_day{}.pdf".format(day))
         plt.show()
