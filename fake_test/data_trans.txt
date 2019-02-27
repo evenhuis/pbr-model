@@ -1,0 +1,4 @@
+pH_slope   =   1
+pH_off     =   0
+O2_slope   =   1
+O2_off     =   0

@@ -1,0 +1,13 @@
+light_file  "I_filt.txt"
+air_file    "air.txt"
+dil_file    "dilution.txt"
+
+ temp_val     26
+   depth_val  20
+   sal_val    34
+   K1_f      1.23
+   K2_f      0.53
+   O2M_val     226.65
+   DICM_val    1724.20
+   TAM_val     1797.90
+
