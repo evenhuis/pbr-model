@@ -363,6 +363,26 @@ if( __name__ == '__main__'):
     df.index.name='Time'
     df.to_csv("mod10_{}.csv".format(treat))
 
+    # make the fake data
+    df_fake = df['O2'].copy()
+    df_fake = df_fake + stats.norm.rvs( 0, scale=theta[theta_typ.index('sg2_O2')], size=len(df_fake ) )
+    df_fake.to_csv("O2.txt",sep=' ')
+
+
+    df_fake = df['pH'].copy()
+    df_fake = df_fake + stats.norm.rvs( 0, scale=theta[theta_typ.index('sg2_pH')], size=len(df_fake ) )
+    df_fake.to_csv("pH.txt",sep=' ')
+
+    dil = np.genfromtxt('dilution.txt')
+    df_fake = df[['DIC','TA']].copy()
+    df_fake = df_fake + stats.norm.rvs( 0, scale=theta[theta_typ.index('sg2_DA')], size=[len(df_fake ),2] )
+
+    # get the diluton times (this gives us when the dilutions occured)
+    inds = df_fake.index.searchsorted(dil[1:,0]) 
+    df_fake.iloc[inds].to_csv("DIC_Alk.txt",sep=' ')    
+
+    sdfjkl
+
 
 
 
