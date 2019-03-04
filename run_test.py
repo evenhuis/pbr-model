@@ -279,7 +279,7 @@ def get_data_trans( fname ):
 
 if( __name__ == '__main__'):
     day=3
-    treat = "input_test_simple.txt"
+    treat = "input_test_const.txt"
     pr.py_setup_drivers("./driver.txt")
     t0,t1 = 0,1
 
