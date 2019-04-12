@@ -22,7 +22,7 @@ spline_var    ={}
 t0 = 0
 t1 = 1
 
-col_names = "O2,DIC,TA,C_pbr,C_tot,1,pH,CO2,HCO3,CO3,PM,P_CO2,P_HCO3,P_CO3,R".split(',')
+col_names = "O2,DIC,TA,C_pbr,C_tot,1,pH,CO2,HCO3,CO3,PM,P_CO2,P_HCO3,P_CO3,R,KM2".split(',')
 
 def filter_trace( obs, thresh ):
     nobs = np.shape(obs)[0]
@@ -279,7 +279,7 @@ def get_data_trans( fname ):
 
 if( __name__ == '__main__'):
     day=3
-    treat = "input_test_const.txt"
+    treat = "input_test_simple.txt"
     pr.py_setup_drivers("./driver.txt")
     t0,t1 = 0,1
 

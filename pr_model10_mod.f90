@@ -8,7 +8,7 @@ use ext_driver_mod
 use resize_mod
 
 implicit none
-integer,public  , parameter :: nstate = 6, naux=9  ! size of state vector + aux variables  
+integer,public  , parameter :: nstate = 6, naux=10 ! size of state vector + aux variables  
 double precision, parameter :: pi=3.141592654, eps=5d-9
 
 
@@ -146,9 +146,9 @@ y0(4) = 1.d0
 t0 = time_steps(1)
 y =0.d0
 
-call calc_XPR(t0,y0, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2,HCO3,CO3)
+call calc_XPR(t0,y0, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2,HCO3,CO3,KM2)
 y(        :nstate,1) = y0
-y(nstate+1:      ,1) =(/ pH,CO2,HCO3,CO3, PM,P_CO2,P_HCO3,P_CO3,R /)
+y(nstate+1:      ,1) =(/ pH,CO2,HCO3,CO3, PM,P_CO2,P_HCO3,P_CO3,R, KM2 /)
 
 
 do n = 2, nstep
@@ -162,8 +162,8 @@ do n = 2, nstep
    y(        :nstate,n) = y1
 
    ! calculate the auxilary varaiable and store them
-   call calc_XPR(t1,y1, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2,HCO3,CO3)
-   y(nstate+1:      ,n) =(/ pH,CO2,HCO3,CO3, PM,P_CO2,P_HCO3,P_CO3,R /)
+   call calc_XPR(t1,y1, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2,HCO3,CO3, KM2)
+   y(nstate+1:      ,n) =(/ pH,CO2,HCO3,CO3, PM,P_CO2,P_HCO3,P_CO3,R, KM2 /)
 
    y0 = y1     ! Don't delete!
 enddo
@@ -173,13 +173,13 @@ return
 end function sim_PR_de
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-subroutine calc_XPR( t,y, mu, PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2, HCO3, CO3 )
+subroutine calc_XPR( t,y, mu, PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH,CO2, HCO3, CO3, KM2 )
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 double precision,intent(in) :: t, y(:) 
-double precision,intent(out):: mu,PM,P,P_HCO3,P_CO2, P_CO3, R,PQ , pH,CO2, HCO3, CO3
+double precision,intent(out):: mu,PM,P,P_HCO3,P_CO2, P_CO3, R,PQ , pH,CO2, HCO3, CO3, KM2
 
 double precision :: t_dawn, t_dusk, X, O2,DIC,TA, I ,S,TK, KM,fler,t_resp,t_photo,&
-                    fphoto,  fP1,fP3 , H, KM1,KM2,KM3
+                    fphoto,  fP1,fP3 , H, KM1,KM3
 
 
 t_dawn = 24*(t-floor(t))-8.
@@ -230,18 +230,18 @@ P_HCO3 = 0.d0
 P_CO2  = 0.d0
 P_CO3  = 0.d0
 PM     = 0.d0
+KM1=0.
+KM2=0.
+KM3=0.
+if(size(Km1t)>0) Km1  = spline_hc( t, kM1t ,kM1c )
+if(size(Km2t)>0) Km2  = spline_hc( t, kM2t ,kM2c )
+if(size(Km3t)>0) Km3  = spline_hc( t, kM3t ,kM3c )
 if ( I>0.2) then
-   KM1=0.
-   KM2=0.
-   KM3=0.
    PM   = spline_hc( t, Pt,Pc)
    fP1  = 0.
    fP3  = 0.
    if(size(fP1t)>0) fP1  = spline_hc( t, fP1t, fP1c )
    if(size(fP3t)>0) fP3  = spline_hc( t, fP3t, fP3c )
-   if(size(Km1t)>0) Km1  = spline_hc( t, kM1t ,kM1c )
-   if(size(Km2t)>0) Km2  = spline_hc( t, kM2t ,kM2c )
-   if(size(Km3t)>0) Km3  = spline_hc( t, kM3t ,kM3c )
 
    fphoto= (1.-exp(-t_dawn*t_photo))
    P_CO2  = fP1*PM* CO2/( CO2+KM1) ! *fphoto
@@ -265,7 +265,7 @@ double precision            ::    dy(size(y))
 
 double precision :: DIC,TA, X,O2, PR ,H, pH, HCO3, CO2, CO3,& ! PR=rate of photosynthesis or respiration
                      I,spg(2), O2_H(2), CO2_H(2), kLa(2),  PM,P,P_HCO3,P_CO2,P_CO3,R,PQ, dTA, NC, &
-                       dil, O2M=0, DICM=0, TAM=0, Cp
+                       dil, O2M=0, DICM=0, TAM=0, Cp, KM2
 
 double precision :: t_dawn, t_dusk , mu=0.d0
 
@@ -300,7 +300,7 @@ endif
 if( size(kla2t)>0) kLa(2) = lint_1D( t, kla2t,kla2c,3 )
 
 ! calculate the growth, P and R rates
-call calc_XPR( t, y, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH, CO2,HCO3,CO3) 
+call calc_XPR( t, y, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH, CO2,HCO3,CO3,KM2) 
 
 dTA = 0.
 if(size(tat)>0) dTA = lint_1D( t, tat, tac,1 )
@@ -325,7 +325,7 @@ double precision            ::    dA(size(y),size(y))
 
 
 double precision :: DIC,TA, X,O2, PR ,H, pH, HCO3, CO2, CO3,& ! PR=rate of photosynthesis or respiration
-                     I,spg(2), O2_H(2), CO2_H(2), kLa(2),  PM,P,P_HCO3,P_CO2,P_CO3,R,PQ, dTA, NC
+                     I,spg(2), O2_H(2), CO2_H(2), kLa(2),  PM,P,P_HCO3,P_CO2,P_CO3,R,PQ, dTA, NC, KM2
 
 double precision :: t_dawn, t_dusk , mu=0.d0
 
@@ -355,7 +355,7 @@ if( size(kla2t)>0 ) kLa(2) = lint_1D( t, kla2t,kla2c,1 )
 
 
 ! calculate the growth, P and R rates
-call calc_XPR( t, y, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH, CO2,HCO3,CO3)
+call calc_XPR( t, y, mu,PM,P,P_CO2,P_HCO3,P_CO3,R,PQ, pH, CO2,HCO3,CO3,KM2)
 
 dTA = 0.
 if( size(tat)>0 ) dTA = spline_hc( t, tat, tac )

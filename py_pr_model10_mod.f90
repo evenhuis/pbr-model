@@ -13,7 +13,7 @@ contains
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function sim_de( np, theta, theta_typ, nt, time  )result(f)
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-integer, parameter :: nstate=6, naux=9
+integer, parameter :: nstate=6, naux=10
 integer,         intent(in) :: np,        nt
 double precision,intent(in) :: theta(np) ,time(nt)
 character*(10)              :: theta_typ(np)
